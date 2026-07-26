@@ -1,0 +1,22 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: grainguard-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: grainguard
+      MYSQL_USER: grainguard_user
+      MYSQL_PASSWORD: grainguard_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - grainguard_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_pass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  grainguard_mysql_data:
