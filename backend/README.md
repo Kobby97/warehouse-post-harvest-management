@@ -6,7 +6,7 @@ Monitors grain silos via ESP32 sensor devices, evaluates readings against
 configurable thresholds, raises alerts, and logs automated ventilation
 decisions. Consumed by a React frontend.
 
-**Status:** Milestone M0 — project foundation. No business logic yet.
+**Status:** Milestone M2 — JWT authentication complete. Real security is now enforced.
 
 ## Stack
 
@@ -64,10 +64,18 @@ the startup logs for `Successfully applied 1 migration`.
 
 ## Project status / important notes
 
-- **Security is currently fully open** (`SecurityConfig.java` permits all
-  requests). This is intentional and temporary for M0 only. It will be
-  replaced with real JWT authentication and role-based access control in
-  **Milestone M2**. Do not build features assuming open access.
+- **Real JWT authentication is now enforced** (`SecurityConfig.java`). All
+  endpoints require a valid `Authorization: Bearer <token>` header except
+  `/api/v1/auth/register`, `/api/v1/auth/login`, `/api/v1/ping`, and the
+  Swagger UI paths. Get a token via `POST /api/v1/auth/register` or
+  `POST /api/v1/auth/login`, then click "Authorize" in Swagger UI (or add
+  the header manually in Postman) to call protected endpoints.
+- Role assignment at registration is intentionally open (the caller picks
+  `ADMIN`/`MANAGER`/`VIEWER` in the request body) — there's no existing
+  Admin yet to gate account creation otherwise. This is a documented
+  simplification for capstone purposes; a stricter production setup would
+  default new accounts to `VIEWER` and require an existing Admin to grant
+  higher roles.
 - `spring.jpa.hibernate.ddl-auto` is set to `validate`, never `update` or
   `create`. **Flyway owns the schema.** All schema changes must be made via
   a new file in `src/main/resources/db/migration/`, following the naming
