@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: graingaurd-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
