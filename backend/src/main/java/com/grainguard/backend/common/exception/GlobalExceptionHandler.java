@@ -31,9 +31,30 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(
+            org.springframework.security.access.AccessDeniedException ex) {
+        // Without this explicit handler, @PreAuthorize rejections get caught
+        // by the generic Exception handler below (since @ControllerAdvice
+        // resolves before Spring Security's own AccessDeniedHandler gets a
+        // chance to run), producing a misleading 500 instead of a 403.
+        return buildResponse(HttpStatus.FORBIDDEN, "You do not have permission to perform this action");
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
         return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrity(
+            org.springframework.dao.DataIntegrityViolationException ex) {
+        // Most commonly triggered by our ON DELETE RESTRICT foreign keys
+        // (e.g. trying to delete a warehouse that still has silos in it).
+        return buildResponse(HttpStatus.CONFLICT,
+                "This action cannot be completed because the resource is still referenced by other records " +
+                        "(e.g. a warehouse with existing silos, or a silo with existing devices). " +
+                        "Remove or reassign those first.");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

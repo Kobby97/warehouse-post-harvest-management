@@ -6,7 +6,7 @@ Monitors grain silos via ESP32 sensor devices, evaluates readings against
 configurable thresholds, raises alerts, and logs automated ventilation
 decisions. Consumed by a React frontend.
 
-**Status:** Milestone M2 — JWT authentication complete. Real security is now enforced.
+**Status:** Milestone M3 — Warehouse & Silo CRUD complete, with role-based access control enforced.
 
 ## Stack
 
@@ -76,6 +76,10 @@ the startup logs for `Successfully applied 1 migration`.
   simplification for capstone purposes; a stricter production setup would
   default new accounts to `VIEWER` and require an existing Admin to grant
   higher roles.
+- **Warehouse/Silo access control:** any authenticated user can read
+  (`GET`); `ADMIN` or `MANAGER` can create/update; only `ADMIN` can delete.
+  There is no per-manager "owns this warehouse" scoping — access is
+  role-based only, a deliberate simplification given project scope.
 - `spring.jpa.hibernate.ddl-auto` is set to `validate`, never `update` or
   `create`. **Flyway owns the schema.** All schema changes must be made via
   a new file in `src/main/resources/db/migration/`, following the naming
