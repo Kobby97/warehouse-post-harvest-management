@@ -19,18 +19,12 @@ import lombok.ToString;
 
 import java.time.Instant;
 
-/**
- * Deliberately minimal for M1 — no API key field yet. That column
- * (api_key_hash) and its authentication wiring belong to Milestone M4
- * (Device Registration & Device Authentication), added via its own
- * Flyway migration rather than being bolted on here.
- */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(callSuper = true, exclude = "silo")
+@ToString(callSuper = true, exclude = {"silo", "apiKeyHash"})
 @Entity
 @Table(name = "devices")
 public class Device extends BaseEntity {
@@ -40,9 +34,15 @@ public class Device extends BaseEntity {
 
     // Human/factory identifier for the physical unit (e.g. ESP32 serial or
     // MAC address) - distinct from the internal database id, and from the
-    // API key introduced in M4.
+    // API key below.
     @Column(name = "device_identifier", nullable = false, unique = true, length = 100)
     private String deviceIdentifier;
+
+    // SHA-256 hash of the device's API key — never the raw key. The raw key
+    // is generated once at registration, shown to the caller exactly once,
+    // and never stored or retrievable again. See DeviceService.register().
+    @Column(name = "api_key_hash", nullable = false, unique = true, length = 255)
+    private String apiKeyHash;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

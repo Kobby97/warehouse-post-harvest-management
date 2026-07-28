@@ -9,4 +9,6 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     boolean existsByDeviceIdentifier(String deviceIdentifier);
 
     Optional<Device> findByDeviceIdentifier(String deviceIdentifier);
+
+    Optional<Device> findByApiKeyHash(String apiKeyHash);
 }
