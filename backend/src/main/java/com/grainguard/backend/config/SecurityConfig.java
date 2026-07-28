@@ -1,6 +1,7 @@
 package com.grainguard.backend.config;
 
 import com.grainguard.backend.security.CustomUserDetailsService;
+import com.grainguard.backend.security.DeviceApiKeyAuthenticationFilter;
 import com.grainguard.backend.security.JwtAuthenticationFilter;
 import com.grainguard.backend.security.RestAccessDeniedHandler;
 import com.grainguard.backend.security.RestAuthenticationEntryPoint;
@@ -35,6 +36,7 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final DeviceApiKeyAuthenticationFilter deviceApiKeyAuthenticationFilter;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
 
@@ -61,7 +63,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
                         .accessDeniedHandler(restAccessDeniedHandler)
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(deviceApiKeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
