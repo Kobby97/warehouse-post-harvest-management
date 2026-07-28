@@ -6,7 +6,7 @@ Monitors grain silos via ESP32 sensor devices, evaluates readings against
 configurable thresholds, raises alerts, and logs automated ventilation
 decisions. Consumed by a React frontend.
 
-**Status:** Milestone M3 — Warehouse & Silo CRUD complete, with role-based access control enforced.
+**Status:** Milestone M4 — Device registration and API key authentication complete.
 
 ## Stack
 
@@ -80,6 +80,22 @@ the startup logs for `Successfully applied 1 migration`.
   (`GET`); `ADMIN` or `MANAGER` can create/update; only `ADMIN` can delete.
   There is no per-manager "owns this warehouse" scoping — access is
   role-based only, a deliberate simplification given project scope.
+- **Device authentication is separate from user authentication.** ESP32
+  devices authenticate via a static API key sent in the `X-API-Key` header
+  (see `DeviceApiKeyAuthenticationFilter`), not a JWT. The raw key is shown
+  exactly once, at registration (`POST /api/v1/devices`) — only its SHA-256
+  hash is ever stored, and it cannot be retrieved again afterward. If lost,
+  re-register the device.
+- **Project scope note:** the physical prototype uses a single ESP32 and a
+  single silo, due to hardware budget constraints. The data model and API
+  still support multiple warehouses/silos/devices for architectural
+  completeness — this is a deployment-scale decision, not a code
+  limitation. Device management endpoints were kept intentionally minimal
+  (register/list/get only, no status-toggle/delete) since building a full
+  device-management UI wasn't worth the time for a single physical unit.
+- `GET /api/v1/devices/verify-key` is a temporary diagnostic endpoint to
+  confirm device API key auth works end-to-end. It will be superseded by
+  the real sensor-reading ingestion endpoint in Milestone M5.
 - `spring.jpa.hibernate.ddl-auto` is set to `validate`, never `update` or
   `create`. **Flyway owns the schema.** All schema changes must be made via
   a new file in `src/main/resources/db/migration/`, following the naming
