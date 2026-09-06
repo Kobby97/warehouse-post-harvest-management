@@ -1,5 +1,7 @@
 package com.grainguard.backend.sentrycompat;
 
+import com.grainguard.backend.alert.AlertService;
+import com.grainguard.backend.alert.dto.AlertResponse;
 import com.grainguard.backend.device.Device;
 import com.grainguard.backend.device.DeviceStatus;
 import com.grainguard.backend.sensorreading.SensorReading;
@@ -15,9 +17,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,21 +30,23 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * Thin translation layer ONLY — no new business logic lives here. See the
- * class-level notes originally written for this controller: mounted under
- * /api/v1/sentry/** to avoid colliding with the real, differently-shaped
- * /api/v1/silos endpoint; single-silo assumption throughout, matching this
- * project's actual physical scope.
+ * Thin translation layer ONLY — no new business logic lives here. Mounted
+ * under /api/v1/sentry/** to avoid colliding with the real, differently-
+ * shaped /api/v1/silos endpoint. Single-silo assumption throughout,
+ * matching this project's actual physical scope.
  *
- * Thresholds use raw Map<String,Object> for request/response here rather
- * than a dedicated DTO — acceptable in this isolated compatibility layer,
- * since moistureMax/co2Max are static placeholders (no such sensors exist
- * on this hardware) rather than real configurable fields.
+ * Note on alerts: the frontend's contract has three states
+ * (active/acknowledged/resolved); our real Alert model only has two
+ * (ACTIVE/RESOLVED) — "acknowledged" was deliberately not built as a
+ * separate concept for this project's scope. The frontend's "ack" button
+ * isn't wired here and will gracefully fall back to mock for that one
+ * action; "resolve" is fully real.
  */
 @Tag(name = "Sentry Compatibility", description = "Read-only endpoints reshaping real data for the Sentry frontend")
 @SecurityRequirement(name = "bearerAuth")
@@ -55,6 +62,7 @@ public class SentryCompatController {
     private final SiloRepository siloRepository;
     private final SensorReadingRepository sensorReadingRepository;
     private final ThresholdService thresholdService;
+    private final AlertService alertService;
 
     @Operation(summary = "[Sentry-compat] Latest reading for the demo silo")
     @GetMapping("/api/v1/sentry/telemetry/latest")
@@ -118,8 +126,47 @@ public class SentryCompatController {
         return toThresholdMap(saved);
     }
 
+    @Operation(summary = "[Sentry-compat] List alerts for the demo silo")
+    @GetMapping("/api/v1/sentry/alerts")
+    public List<Map<String, Object>> alerts() {
+        Silo silo = demoSilo();
+        return alertService.getBySilo(silo.getId(), Pageable.unpaged())
+                .getContent()
+                .stream()
+                .map(a -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", "ALR-" + a.getId());
+                    m.put("silo", silo.getCode());
+                    m.put("severity", a.getSeverity().name().toLowerCase());
+                    m.put("title", titleFor(a));
+                    m.put("detail", a.getMessage());
+                    m.put("at", a.getCreatedAt().toEpochMilli());
+                    m.put("state", a.getStatus().name().toLowerCase());
+                    return m;
+                })
+                .toList();
+    }
+
+    @Operation(summary = "[Sentry-compat] Resolve an alert")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PostMapping("/api/v1/sentry/alerts/{id}/resolve")
+    public Map<String, Object> resolveAlert(@PathVariable String id) {
+        Long realId = Long.parseLong(id.replace("ALR-", ""));
+        alertService.resolve(realId);
+        return Map.of("resolved", true);
+    }
+
+    private String titleFor(AlertResponse a) {
+        return switch (a.getBreachType()) {
+            case HIGH_TEMPERATURE -> "Silo " + a.getSiloCode() + " above temperature cap";
+            case LOW_TEMPERATURE -> "Silo " + a.getSiloCode() + " below temperature floor";
+            case HIGH_HUMIDITY -> "Silo " + a.getSiloCode() + " above humidity cap";
+            case LOW_HUMIDITY -> "Silo " + a.getSiloCode() + " below humidity floor";
+        };
+    }
+
     private Map<String, Object> toThresholdMap(ThresholdResponse t) {
-        Map<String, Object> map = new java.util.HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         map.put("tempMax", t.getMaxTemperatureCelsius());
         map.put("tempMin", t.getMinTemperatureCelsius());
         map.put("humidityMax", t.getMaxHumidityPercent());
