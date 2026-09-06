@@ -16,6 +16,7 @@ public class SiloResponse {
     private String code;
     private GrainType grainType;
     private Double capacityKg;
+    private Double heightCm;
     private Long warehouseId;
     private String warehouseName;
     private Instant createdAt;

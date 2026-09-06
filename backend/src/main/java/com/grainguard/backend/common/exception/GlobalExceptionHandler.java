@@ -1,7 +1,9 @@
 package com.grainguard.backend.common.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -31,9 +33,8 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
-    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    public ResponseEntity<Map<String, Object>> handleAccessDenied(
-            org.springframework.security.access.AccessDeniedException ex) {
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
         // Without this explicit handler, @PreAuthorize rejections get caught
         // by the generic Exception handler below (since @ControllerAdvice
         // resolves before Spring Security's own AccessDeniedHandler gets a
@@ -46,15 +47,22 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password");
     }
 
-    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
-    public ResponseEntity<Map<String, Object>> handleDataIntegrity(
-            org.springframework.dao.DataIntegrityViolationException ex) {
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException ex) {
         // Most commonly triggered by our ON DELETE RESTRICT foreign keys
         // (e.g. trying to delete a warehouse that still has silos in it).
         return buildResponse(HttpStatus.CONFLICT,
                 "This action cannot be completed because the resource is still referenced by other records " +
                         "(e.g. a warehouse with existing silos, or a silo with existing devices). " +
                         "Remove or reassign those first.");
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+        // Used for business-rule validation that Bean Validation annotations
+        // can't express cleanly (e.g. cross-field checks like
+        // "min must be less than max" in ThresholdService).
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

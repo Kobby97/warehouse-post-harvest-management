@@ -23,6 +23,10 @@ public class SiloRequest {
     @Positive(message = "Capacity must be greater than zero")
     private Double capacityKg;
 
+    @NotNull(message = "Height is required")
+    @Positive(message = "Height must be greater than zero")
+    private Double heightCm;
+
     @NotNull(message = "Warehouse id is required")
     private Long warehouseId;
 }

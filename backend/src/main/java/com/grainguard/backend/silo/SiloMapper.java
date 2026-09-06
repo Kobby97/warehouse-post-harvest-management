@@ -14,6 +14,7 @@ public final class SiloMapper {
                 .code(request.getCode())
                 .grainType(request.getGrainType())
                 .capacityKg(request.getCapacityKg())
+                .heightCm(request.getHeightCm())
                 .warehouse(warehouse)
                 .build();
     }
@@ -22,20 +23,17 @@ public final class SiloMapper {
         silo.setCode(request.getCode());
         silo.setGrainType(request.getGrainType());
         silo.setCapacityKg(request.getCapacityKg());
+        silo.setHeightCm(request.getHeightCm());
         silo.setWarehouse(warehouse);
     }
 
-    // Reads silo.getWarehouse().getName(), which is a LAZY-loaded relation.
-    // Must only be called from within a transactional context (see
-    // SiloService, which wraps every method that calls this) — otherwise
-    // this throws LazyInitializationException, since open-in-view is
-    // disabled project-wide.
     public static SiloResponse toResponse(Silo silo) {
         return SiloResponse.builder()
                 .id(silo.getId())
                 .code(silo.getCode())
                 .grainType(silo.getGrainType())
                 .capacityKg(silo.getCapacityKg())
+                .heightCm(silo.getHeightCm())
                 .warehouseId(silo.getWarehouse().getId())
                 .warehouseName(silo.getWarehouse().getName())
                 .createdAt(silo.getCreatedAt())

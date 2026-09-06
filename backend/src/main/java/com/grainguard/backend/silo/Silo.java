@@ -20,11 +20,7 @@ import lombok.ToString;
 /**
  * Deliberately a unidirectional @ManyToOne (Silo -> Warehouse), not a
  * bidirectional relationship with a @OneToMany list back on Warehouse.
- * Bidirectional JPA relationships add real complexity (cascade rules,
- * orphan removal, infinite-loop risk in toString/equals/JSON serialization)
- * for very little benefit here — if we need "all silos in a warehouse",
- * that's a simple repository query (see SiloRepository), not a Java
- * collection we have to keep in sync.
+ * See SiloRepository for "all silos in a warehouse" queries instead.
  */
 @Getter
 @Setter
@@ -45,6 +41,13 @@ public class Silo extends BaseEntity {
 
     @Column(name = "capacity_kg", nullable = false)
     private Double capacityKg;
+
+    // Distance in cm from the mounted ultrasonic sensor down to the empty
+    // silo floor. Used to convert a raw distance reading into a fill
+    // percentage: fillPercentage = (heightCm - distanceCm) / heightCm * 100.
+    // See FillLevelCalculator (M5).
+    @Column(name = "height_cm", nullable = false)
+    private Double heightCm;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id", nullable = false)
